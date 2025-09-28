@@ -1,0 +1,26 @@
+employee_id,date,status,clock_in,clock_out,total_hours,overtime_hours,note
+EMP001,2025-09-01,Present,08:00,17:00,8,1,
+EMP001,2025-09-02,Present,08:15,17:30,8,1.5,
+EMP001,2025-09-03,Sick,,,,,
+EMP001,2025-09-04,Present,08:00,17:00,8,0,
+EMP001,2025-09-05,Present,08:00,18:00,9,2,Overtime work
+EMP002,2025-09-01,Present,09:00,18:00,8,1,
+EMP002,2025-09-02,Present,08:30,17:30,8,0.5,
+EMP002,2025-09-03,Permission,,,,Family matter
+EMP002,2025-09-04,Present,08:00,17:00,8,0,
+EMP002,2025-09-05,Present,08:00,17:00,8,0,
+EMP003,2025-09-01,Present,08:30,17:30,8,0.5,
+EMP003,2025-09-02,Present,08:00,17:00,8,0,
+EMP003,2025-09-03,Leave,,,,Annual leave
+EMP003,2025-09-04,Present,08:00,17:00,8,0,
+EMP003,2025-09-05,Present,08:00,17:00,8,0,
+EMP004,2025-09-01,Present,08:15,17:15,8,0,
+EMP004,2025-09-02,Present,08:00,17:00,8,0,
+EMP004,2025-09-03,Present,08:00,17:00,8,0,
+EMP004,2025-09-04,Present,08:30,18:00,8.5,1.5,
+EMP004,2025-09-05,Absent,,,,,
+EMP005,2025-09-01,Present,09:00,18:00,8,1,
+EMP005,2025-09-02,Present,08:30,17:30,8,0.5,
+EMP005,2025-09-03,Present,08:00,17:00,8,0,
+EMP005,2025-09-04,Permission,,,,Personal errand
+EMP005,2025-09-05,Present,08:00,17:00,8,0,
