@@ -2,7 +2,8 @@
 	admin :2019
 }
 
-*.localhost {
+payroll.farindra.com {
+    tls off
 	root * /app/public
 	encode zstd gzip
 	file_server
