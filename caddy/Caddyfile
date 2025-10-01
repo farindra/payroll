@@ -1,8 +1,10 @@
 {
 	admin :2019
+	# Disable automatic HTTPS and redirects
+	auto_https off
 }
 
-# Simple localhost configuration to avoid DNS/TLS issues
+# HTTP configuration
 :80 {
 	root * /app/public
 	encode zstd gzip
