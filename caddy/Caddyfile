@@ -2,8 +2,40 @@
 	admin :2019
 }
 
-# Handle both localhost and custom domain
-:80, payroll.farindra.com {
+# Configure DNS challenge for Cloudflare
+{
+	email farindra.project@gmail.com
+	acme_dns cloudflare {
+		api_token NNKEaL019eqy9Oc9hMCShNfcY4gjtmeN89M4tUR7
+	}
+}
+
+# Handle the domain with automatic HTTPS
+payroll.farindra.com {
+	root * /app/public
+	encode zstd gzip
+	file_server
+
+	# Security headers
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	log {
+		output file /var/log/caddy/access.log
+		format json
+	}
+
+	handle_errors {
+		respond "{http.error.status_code} {http.error.status_text}"
+	}
+}
+
+# Handle localhost without HTTPS
+:80 {
 	root * /app/public
 	encode zstd gzip
 	file_server
