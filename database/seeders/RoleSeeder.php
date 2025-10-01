@@ -33,43 +33,26 @@ class RoleSeeder extends Seeder
         $adminRole->syncPermissions($allPermissions);
 
         // Give limited permissions to employee
-        // Basic view permissions for most resources
-        $employeePermissions = Permission::where(function($query) {
-            $query->where('name', 'like', '%view_any')
-                  ->orWhere('name', 'like', '%page_Dashboard')
-                  ->orWhere('name', 'like', '%widget%')
-                  ->orWhere('name', 'view_any_employee')
-                  ->orWhere('name', 'view_employee')
-                  ->orWhere('name', 'view_any_department')
-                  ->orWhere('name', 'view_department')
-                  ->orWhere('name', 'view_any_payroll_period')
-                  ->orWhere('name', 'view_payroll_period')
-                  ->orWhere('name', 'view_any_attendance')
-                  ->orWhere('name', 'view_attendance')
-                  ->orWhere('name', 'view_any_payroll_detail')
-                  ->orWhere('name', 'view_payroll_detail');
-        })->pluck('name')->toArray();
-
-        // Remove admin-only permissions
-        $excludedPermissions = [
-            'user management access',
-            'role management access',
-            'view user',
-            'create user',
-            'edit user',
-            'delete user',
-            'view role',
-            'create role',
-            'edit role',
-            'delete role',
+        // Only essential permissions for employee role
+        $employeePermissions = [
+            'view_any_attendance',
+            'view_attendance',
+            'view_any_payroll_detail',
+            'view_payroll_detail',
+            'page_Dashboard',
+            'panel_access',
+            'widget_AccountWidget',
+            'widget_FilamentInfoWidget',
+            'page_EmployeeDashboard',
+            'page_EmployeePayrollReports',
         ];
-
-        $employeePermissions = array_diff($employeePermissions, $excludedPermissions);
 
         $employeeRole->syncPermissions($employeePermissions);
 
-        $this->command->info('Roles seeded successfully!');
-        $this->command->info('Admin role has ' . $adminRole->permissions->count() . ' permissions');
-        $this->command->info('Employee role has ' . $employeeRole->permissions->count() . ' permissions');
+        if ($this->command) {
+            $this->command->info('Roles seeded successfully!');
+            $this->command->info('Admin role has ' . $adminRole->permissions->count() . ' permissions');
+            $this->command->info('Employee role has ' . $employeeRole->permissions->count() . ' permissions');
+        }
     }
 }
