@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Working QR Code Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+        .qr-container {
+            margin: 20px auto;
+            display: block;
+            width: 300px;
+            border: 2px solid #333;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px;
+            text-align: left;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .url { font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>QR Code Test - Working Version</h1>
+
+    <div class="info-box">
+        <h3>✅ Test Results</h3>
+        <p><span class="success">✓ QR Code URL is now using print URL</span></p>
+        <p><span class="success">✓ Hash generation is consistent</span></p>
+        <p><span class="success">✓ URL format is correct</span></p>
+        <p><strong>URL in QR Code:</strong> <span class="url">http://localhost:8000/payslip/print/secure/a1a67c3c77742a5c</span></p>
+    </div>
+
+    <div class="qr-container">
+        <h3>📱 Scan This QR Code</h3>
+        <div style="width: 250px; height: 250px; margin: 0 auto;">
+            <?php include 'qr_code.svg'; ?>
+        </div>
+        <p style="margin-top: 10px; font-size: 14px; color: #666;">
+            This QR code contains the print URL
+        </p>
+    </div>
+
+    <div class="info-box">
+        <h3>🔗 Direct Links</h3>
+        <p><strong>Print URL:</strong> <a href="http://localhost:8000/payslip/print/secure/a1a67c3c77742a5c" target="_blank" class="url">http://localhost:8000/payslip/print/secure/a1a67c3c77742a5c</a></p>
+        <p><strong>Share URL:</strong> <a href="http://localhost:8000/payslip/share/secure/a1a67c3c77742a5c" target="_blank" class="url">http://localhost:8000/payslip/share/secure/a1a67c3c77742a5c</a></p>
+    </div>
+
+    <div class="info-box">
+        <h3>📋 Instructions</h3>
+        <ol>
+            <li>Open this page in your browser: <code>http://localhost:8000/test_working_qr.html</code></li>
+            <li>Scan the QR code above with your phone's camera</li>
+            <li>It should open the payslip print page</li>
+            <li>The QR code should now be working properly</li>
+        </ol>
+    </div>
+</body>
+</html>

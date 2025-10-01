@@ -90,6 +90,47 @@ class PayrollCalculationService
         $totalDeductions = $pph21 + $bpjsKesehatan + $bpjsTK + $otherDeductions;
         $netSalary = $grossSalary - $totalDeductions;
 
+        // Add mandatory deductions to the breakdown
+        if (!isset($this->calculationDetails['deductions'])) {
+            $this->calculationDetails['deductions'] = [];
+        }
+
+        // Add PPh21
+        if ($pph21 > 0) {
+            $this->calculationDetails['deductions'][] = [
+                'name' => 'PPh 21',
+                'amount' => $pph21,
+                'type' => 'tax',
+                'is_percentage' => false,
+                'percentage' => null,
+                'component_id' => null
+            ];
+        }
+
+        // Add BPJS Kesehatan
+        if ($bpjsKesehatan > 0) {
+            $this->calculationDetails['deductions'][] = [
+                'name' => 'BPJS Kesehatan',
+                'amount' => $bpjsKesehatan,
+                'type' => 'insurance',
+                'is_percentage' => false,
+                'percentage' => null,
+                'component_id' => null
+            ];
+        }
+
+        // Add BPJS TK
+        if ($bpjsTK > 0) {
+            $this->calculationDetails['deductions'][] = [
+                'name' => 'BPJS Ketenagakerjaan',
+                'amount' => $bpjsTK,
+                'type' => 'insurance',
+                'is_percentage' => false,
+                'percentage' => null,
+                'component_id' => null
+            ];
+        }
+
         $this->calculationDetails = [
             'basic_salary' => $basicSalary,
             'allowances' => $allowances,
@@ -156,13 +197,31 @@ class PayrollCalculationService
             })
             ->get();
 
+        $earnings = [];
+
         foreach ($components as $component) {
+            $amount = 0;
             if ($component->is_percentage) {
-                $totalAllowances += ($this->employee->basic_salary * $component->amount) / 100;
+                $amount = ($this->employee->basic_salary * $component->amount) / 100;
             } else {
-                $totalAllowances += $component->amount;
+                $amount = $component->amount;
             }
+
+            $totalAllowances += $amount;
+
+            // Track individual component
+            $earnings[] = [
+                'name' => $component->component->name,
+                'amount' => $amount,
+                'type' => $component->component->type,
+                'is_percentage' => $component->is_percentage,
+                'percentage' => $component->is_percentage ? $component->amount : null,
+                'component_id' => $component->component_id
+            ];
         }
+
+        // Store earnings breakdown in calculation details
+        $this->calculationDetails['earnings'] = $earnings;
 
         return $totalAllowances;
     }
@@ -177,6 +236,21 @@ class PayrollCalculationService
             if ($attendance->overtime_hours > 0) {
                 $totalOvertime += $attendance->overtime_hours * $hourlyRate * $overtimeRate;
             }
+        }
+
+        // Add overtime as an earnings component if it exists
+        if ($totalOvertime > 0) {
+            if (!isset($this->calculationDetails['earnings'])) {
+                $this->calculationDetails['earnings'] = [];
+            }
+            $this->calculationDetails['earnings'][] = [
+                'name' => 'Lembur',
+                'amount' => $totalOvertime,
+                'type' => 'overtime',
+                'is_percentage' => false,
+                'percentage' => null,
+                'component_id' => null
+            ];
         }
 
         return $totalOvertime;
@@ -284,8 +358,22 @@ class PayrollCalculationService
             ->forDate($this->payrollPeriod->end_date)
             ->get();
 
+        if (!isset($this->calculationDetails['deductions'])) {
+            $this->calculationDetails['deductions'] = [];
+        }
+
         foreach ($deductions as $deduction) {
             $totalDeductions += $deduction->monthly_amount;
+
+            // Track individual deduction
+            $this->calculationDetails['deductions'][] = [
+                'name' => $deduction->description,
+                'amount' => $deduction->monthly_amount,
+                'type' => 'deduction',
+                'is_percentage' => false,
+                'percentage' => null,
+                'deduction_id' => $deduction->id
+            ];
         }
 
         return $totalDeductions;

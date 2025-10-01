@@ -2,7 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\AdminLogin;
 use Filament\Http\Middleware\Authenticate;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -26,8 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
-            ->registration()
+            ->login(AdminLogin::class)
+            // ->registration()
             ->passwordReset()
             ->emailVerification()
             ->profile()
@@ -44,7 +46,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                \App\Filament\Widgets\EmployeeCountWidget::class,
+                \App\Filament\Widgets\DepartmentCountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -57,9 +61,16 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->plugins([
+                FilamentShieldPlugin::make(),
+            ])
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->renderHook(
+                'panels::auth.login.form.after',
+                fn () => view('filament.auth.admin-access-info'),
+            )
             ->brandName('Payroll System')
             ->brandLogo(asset('images/logo.svg'))
             ->brandLogoHeight('2rem')
@@ -68,6 +79,6 @@ class AdminPanelProvider extends PanelProvider
             ->maxContentWidth('screen-2xl')
             ->sidebarCollapsibleOnDesktop()
             ->topNavigation(false)
-          ;
+        ;
     }
 }

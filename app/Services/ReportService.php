@@ -280,12 +280,291 @@ class ReportService
         $pdf = PDF::loadView('reports.payslip', [
             'payrollDetail' => $payrollDetail,
             'company' => [
-                'name' => 'Your Company Name',
-                'address' => 'Company Address',
-                'phone' => 'Company Phone',
+                'name' => config('app.company_name', 'PT. Payroll System Indonesia'),
+                'address' => config('app.company_address', 'Jl. Teknologi No. 123, Jakarta Selatan 12345'),
+                'phone' => config('app.company_phone', '+62 21 1234 5678'),
+                'email' => config('app.company_email', 'hrd@payrollsystem.co.id'),
+                'website' => config('app.company_website', 'www.payrollsystem.co.id'),
             ],
         ]);
 
         return $pdf;
+    }
+
+    public function generateEmployeePayrollSummary($periodId, $employeeId)
+    {
+        $utf8Cleaner = new Utf8CleanerService();
+        $period = PayrollPeriod::findOrFail($periodId);
+        $payrollDetail = PayrollDetail::with(['employee.department'])
+            ->where('payroll_period_id', $periodId)
+            ->where('employee_id', $employeeId)
+            ->first();
+
+        if (!$payrollDetail) {
+            throw new \Exception('Payroll data not found for this employee in the selected period.');
+        }
+
+        // Clean period name to prevent UTF-8 issues
+        $period->period_name = $utf8Cleaner->cleanString($period->period_name);
+
+        // Use actual component data from calculation details with aggressive UTF-8 cleaning
+        $earnings = [];
+        try {
+            $dynamicEarnings = $payrollDetail->earnings;
+            if (empty($dynamicEarnings)) {
+                // Fallback to original structure if no dynamic earnings
+                $earnings = [
+                    ['name' => 'Gaji Pokok', 'amount' => $payrollDetail->basic_salary, 'type' => 'basic_salary'],
+                    ['name' => 'Tunjangan', 'amount' => $payrollDetail->total_allowances, 'type' => 'allowances'],
+                ];
+            } else {
+                // Process dynamic earnings with aggressive UTF-8 cleaning
+                foreach ($dynamicEarnings as $earning) {
+                    if (isset($earning['name']) && isset($earning['amount'])) {
+                        $earnings[] = [
+                            'name' => $utf8Cleaner->cleanString($earning['name']),
+                            'amount' => $earning['amount'],
+                            'type' => $earning['type'] ?? 'other',
+                            'is_percentage' => $earning['is_percentage'] ?? false,
+                            'percentage' => $earning['percentage'] ?? null,
+                            'component_id' => $earning['component_id'] ?? null
+                        ];
+                    }
+                }
+
+                // Add basic salary as a separate component if it exists and not already included
+                if ($payrollDetail->basic_salary > 0) {
+                    $hasBasicSalary = collect($earnings)->contains(function($item) {
+                        return $item['type'] === 'basic_salary' || str_contains(strtolower($item['name']), 'gaji pokok');
+                    });
+                    if (!$hasBasicSalary) {
+                        array_unshift($earnings, [
+                            'name' => 'Gaji Pokok',
+                            'amount' => $payrollDetail->basic_salary,
+                            'type' => 'basic_salary',
+                            'is_percentage' => false,
+                            'percentage' => null,
+                            'component_id' => null
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to basic structure on any error
+            $earnings = [
+                ['name' => 'Gaji Pokok', 'amount' => $payrollDetail->basic_salary, 'type' => 'basic_salary'],
+                ['name' => 'Tunjangan', 'amount' => $payrollDetail->total_allowances, 'type' => 'allowances'],
+            ];
+        }
+
+        $deductions = [];
+        try {
+            $dynamicDeductions = $payrollDetail->deductions;
+            if (empty($dynamicDeductions)) {
+                // Fallback to original structure if no dynamic deductions
+                if ($payrollDetail->pph_21 > 0) {
+                    $deductions[] = ['name' => 'PPH 21', 'amount' => $payrollDetail->pph_21, 'type' => 'tax'];
+                }
+                if ($payrollDetail->bpjs_kesehatan_emp > 0) {
+                    $deductions[] = ['name' => 'BPJS Kesehatan', 'amount' => $payrollDetail->bpjs_kesehatan_emp, 'type' => 'insurance'];
+                }
+                if ($payrollDetail->bpjs_tk_emp > 0) {
+                    $deductions[] = ['name' => 'BPJS Ketenagakerjaan', 'amount' => $payrollDetail->bpjs_tk_emp, 'type' => 'insurance'];
+                }
+            } else {
+                // Process dynamic deductions with aggressive UTF-8 cleaning
+                foreach ($dynamicDeductions as $deduction) {
+                    if (isset($deduction['name']) && isset($deduction['amount'])) {
+                        $deductions[] = [
+                            'name' => $utf8Cleaner->cleanString($deduction['name']),
+                            'amount' => $deduction['amount'],
+                            'type' => $deduction['type'] ?? 'other',
+                            'is_percentage' => $deduction['is_percentage'] ?? false,
+                            'percentage' => $deduction['percentage'] ?? null,
+                            'component_id' => $deduction['component_id'] ?? null
+                        ];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to basic structure on any error
+            $deductions = [];
+            if ($payrollDetail->pph_21 > 0) {
+                $deductions[] = ['name' => 'PPH 21', 'amount' => $payrollDetail->pph_21, 'type' => 'tax'];
+            }
+            if ($payrollDetail->bpjs_kesehatan_emp > 0) {
+                $deductions[] = ['name' => 'BPJS Kesehatan', 'amount' => $payrollDetail->bpjs_kesehatan_emp, 'type' => 'insurance'];
+            }
+            if ($payrollDetail->bpjs_tk_emp > 0) {
+                $deductions[] = ['name' => 'BPJS Ketenagakerjaan', 'amount' => $payrollDetail->bpjs_tk_emp, 'type' => 'insurance'];
+            }
+        }
+
+        return [
+            'period' => [
+                'period_name' => $utf8Cleaner->cleanString($period->period_name),
+                'start_date' => $period->start_date,
+                'end_date' => $period->end_date,
+                'status' => $period->status,
+            ],
+            'employee' => [
+                'id' => $payrollDetail->employee->id,
+                'full_name' => $utf8Cleaner->cleanString($payrollDetail->employee->full_name),
+                'nip' => $payrollDetail->employee->nip,
+                'department' => $utf8Cleaner->cleanString($payrollDetail->employee->department->name ?? null),
+                'position' => $utf8Cleaner->cleanString($payrollDetail->employee->position),
+            ],
+            'payroll_detail' => [
+                'earnings' => array_filter($earnings, fn($item) => $item['amount'] > 0),
+                'deductions' => array_filter($deductions, fn($item) => $item['amount'] > 0),
+                'take_home_pay' => $payrollDetail->net_salary,
+                'gross_salary' => $payrollDetail->gross_salary,
+                'net_salary' => $payrollDetail->net_salary,
+            ],
+        ];
+    }
+
+    public function generateEmployeeAttendanceReport($startDate, $endDate, $employeeId)
+    {
+        $attendances = \App\Models\Attendance::where('employee_id', $employeeId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date')
+            ->get();
+
+        $summary = [
+            'present' => $attendances->where('status', 'Present')->count(),
+            'late' => $attendances->where('status', 'Late')->count(),
+            'absent' => $attendances->where('status', 'Absent')->count(),
+            'leave' => $attendances->where('status', 'Leave')->count() + $attendances->where('status', 'Sick')->count(),
+        ];
+
+        return [
+            'period' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+            'summary' => $summary,
+            'attendances' => $attendances->map(function ($attendance) {
+                return [
+                    'date' => $attendance->date,
+                    'check_in' => $attendance->clock_in,
+                    'check_out' => $attendance->clock_out,
+                    'status' => strtolower($attendance->status),
+                    'notes' => $attendance->note,
+                ];
+            }),
+        ];
+    }
+
+    public function exportEmployeeReportToExcel($data, $type)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        switch ($type) {
+            case 'payroll_summary':
+                return $this->exportEmployeePayrollSummaryExcel($data);
+            case 'attendance':
+                return $this->exportEmployeeAttendanceExcel($data);
+            default:
+                throw new \Exception('Unknown export type');
+        }
+    }
+
+    protected function exportEmployeePayrollSummaryExcel($data)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Headers
+        $sheet->setCellValue('A1', 'Laporan Penggajian Pribadi');
+        $sheet->setCellValue('A2', 'Nama: ' . $data['employee']['name']);
+        $sheet->setCellValue('A3', 'NIK: ' . $data['employee']['nik']);
+        $sheet->setCellValue('A4', 'Periode: ' . $data['period']['period_name']);
+        $sheet->setCellValue('A5', 'Generated: ' . now()->format('Y-m-d H:i:s'));
+
+        // Employee info
+        $sheet->setCellValue('A7', 'Informasi Karyawan');
+        $sheet->setCellValue('A8', 'Departemen');
+        $sheet->setCellValue('B8', $data['employee']['department'] ?? '-');
+        $sheet->setCellValue('A9', 'Jabatan');
+        $sheet->setCellValue('B9', $data['employee']['position'] ?? '-');
+
+        // Earnings
+        $row = 11;
+        $sheet->setCellValue('A' . $row, 'Pendapatan');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        foreach ($data['payroll_detail']['earnings'] as $earning) {
+            $sheet->setCellValue('A' . $row, $earning['name']);
+            $sheet->setCellValue('B' . $row, $earning['amount']);
+            $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $row++;
+        }
+
+        // Deductions
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Potongan');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        foreach ($data['payroll_detail']['deductions'] as $deduction) {
+            $sheet->setCellValue('A' . $row, $deduction['name']);
+            $sheet->setCellValue('B' . $row, $deduction['amount']);
+            $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $row++;
+        }
+
+        // Net salary
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Take Home Pay');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('B' . $row, $data['payroll_detail']['take_home_pay']);
+        $sheet->getStyle('B' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('B' . $row)->getFont()->setBold(true);
+
+        return $spreadsheet;
+    }
+
+    protected function exportEmployeeAttendanceExcel($data)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Headers
+        $sheet->setCellValue('A1', 'Laporan Kehadiran Pribadi');
+        $sheet->setCellValue('A2', 'Periode: ' . $data['period']['start_date'] . ' - ' . $data['period']['end_date']);
+        $sheet->setCellValue('A3', 'Generated: ' . now()->format('Y-m-d H:i:s'));
+
+        // Summary
+        $sheet->setCellValue('A5', 'Ringkasan');
+        $sheet->setCellValue('A6', 'Hadir');
+        $sheet->setCellValue('B6', $data['summary']['present']);
+        $sheet->setCellValue('A7', 'Terlambat');
+        $sheet->setCellValue('B7', $data['summary']['late']);
+        $sheet->setCellValue('A8', 'Tidak Hadir');
+        $sheet->setCellValue('B8', $data['summary']['absent']);
+        $sheet->setCellValue('A9', 'Cuti');
+        $sheet->setCellValue('B9', $data['summary']['leave']);
+
+        // Attendance details
+        $row = 11;
+        $sheet->setCellValue('A' . $row, 'Tanggal');
+        $sheet->setCellValue('B' . $row, 'Check In');
+        $sheet->setCellValue('C' . $row, 'Check Out');
+        $sheet->setCellValue('D' . $row, 'Status');
+        $sheet->getStyle('A' . $row . ':D' . $row)->getFont()->setBold(true);
+        $row++;
+
+        foreach ($data['attendances'] as $attendance) {
+            $sheet->setCellValue('A' . $row, $attendance['date']);
+            $sheet->setCellValue('B' . $row, $attendance['check_in'] ?? '-');
+            $sheet->setCellValue('C' . $row, $attendance['check_out'] ?? '-');
+            $sheet->setCellValue('D' . $row, $attendance['status']);
+            $row++;
+        }
+
+        return $spreadsheet;
     }
 }
