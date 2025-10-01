@@ -2,8 +2,8 @@
 	admin :2019
 }
 
-payroll.farindra.com {
-    tls off
+# Handle all domains including localhost and custom domain
+*.localhost, payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
 	file_server
