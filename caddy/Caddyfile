@@ -2,7 +2,8 @@
 	admin :2019
 }
 
-:80 {
+# Handle both localhost and custom domain
+:80, payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
 	file_server
