@@ -51,13 +51,14 @@ RUN composer install --no-interaction --no-scripts --optimize-autoloader
 # Copy application code
 COPY . .
 
-# Set proper permissions
-RUN chown -R www-data:www-data /app \
+# Create .env file if it doesn't exist and set proper permissions
+RUN if [ ! -f .env ]; then cp .env.example .env; fi \
+    && chown -R www-data:www-data /app \
     && chmod -R 755 /app/storage \
     && chmod -R 755 /app/bootstrap/cache
 
-# Generate application key if not exists
-RUN if [ ! -f .env ]; then cp .env.example .env; fi && php artisan key:generate
+# Generate application key only if .env exists
+RUN if [ -f .env ]; then php artisan key:generate; fi
 
 # Don't cache configs in development
 # RUN php artisan config:clear && php artisan route:clear && php artisan view:clear

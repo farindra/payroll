@@ -50,18 +50,21 @@ RUN composer install --no-dev --no-interaction --no-scripts --optimize-autoloade
 # Copy application code
 COPY . .
 
-# Set proper permissions
-RUN chown -R www-data:www-data /app \
+# Create .env file if it doesn't exist and set proper permissions
+RUN if [ ! -f .env ]; then cp .env.example .env; fi \
+    && chown -R www-data:www-data /app \
     && chmod -R 755 /app/storage \
     && chmod -R 755 /app/bootstrap/cache
 
-# Generate application key
-RUN php artisan key:generate
+# Generate application key only if .env exists
+RUN if [ -f .env ]; then php artisan key:generate; fi
 
-# Optimize Laravel for production
-RUN php artisan config:cache \
+# Optimize Laravel for production (only if .env exists and is not example)
+RUN if [ -f .env ] && [ ! .env -ef .env.example ]; then \
+    php artisan config:cache \
     && php artisan route:cache \
-    && php artisan view:cache
+    && php artisan view:cache; \
+    fi
 
 # Expose port
 EXPOSE 80
