@@ -2,22 +2,23 @@
 	admin :2019
 }
 
-# Handle the domain - Cloudflare will provide SSL
+# Handle Zero Trust tunnel traffic
 payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
 	file_server
 
-	# Security headers
+	# Security headers for Zero Trust
 	header {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		X-XSS-Protection "1; mode=block"
+		# Add Zero Trust specific headers
+		CF-IPCountry {http.request.remote.host}
+		CF-Ray {http.request.cf-ray}
 	}
 
-	# Cloudflare already provides HSTS, so we don't need it here
-	# Cloudflare handles SSL termination
-
+	# Zero Trust provides SSL, so we focus on app security
 	log {
 		output file /var/log/caddy/access.log
 		format json

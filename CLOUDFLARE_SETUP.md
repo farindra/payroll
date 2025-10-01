@@ -1,128 +1,227 @@
-# Cloudflare Configuration for Caddy/FrankenPHP
+# Cloudflare Zero Trust Configuration for Caddy/FrankenPHP
 
-This setup uses Cloudflare's proxy mode to provide SSL termination, avoiding the need for DNS challenge modules that may not be available in FrankenPHP.
+This setup uses Cloudflare Zero Trust (formerly Cloudflare Access) to securely expose your application without public exposure.
 
 ## Prerequisites
 
-1. **Cloudflare Account**: You need a Cloudflare account with your domain `payroll.farindra.com` managed by Cloudflare
-2. **Server IP**: Your server's public IP address
+1. **Cloudflare Account**: With domain `payroll.farindra.com` managed by Cloudflare
+2. **Zero Trust Plan**: Free or paid Cloudflare Zero Trust plan
+3. **Cloudflare Tunnel**: cloudflared tunnel agent
 
-## Configuration Steps
+## Cloudflare Zero Trust Setup
 
-### 1. DNS Configuration in Cloudflare
+### 1. Create Zero Trust Application
 
-Set up your DNS records in Cloudflare:
+1. Go to Cloudflare Dashboard → Zero Trust → Access → Applications
+2. Click "Add an application"
+3. Choose "Self-hosted" application type
+4. Configure:
+   - **Application Name**: Filament Payroll App
+   - **Session Duration**: 24h (or as needed)
+   - **Path**: `https://payroll.farindra.com`
 
+### 2. Configure Access Policies
+
+Create policies to control who can access the application:
+
+#### Example Policy: Email Domain
 ```
-Type: A
-Name: payroll
-Content: YOUR_SERVER_IP
-Proxy status: Proxied (orange cloud ON)
-TTL: Auto
+Action: Allow
+Identity: Email ends with @yourcompany.com
 ```
 
-**Important**: Enable the proxy (orange cloud ON) to use Cloudflare's SSL.
+#### Example Policy: Specific Emails
+```
+Action: Allow
+Identity: Email in [admin@yourcompany.com, user@yourcompany.com]
+```
 
-### 2. SSL/TLS Settings in Cloudflare
+#### Example Policy: 2FA Required
+```
+Action: Allow
+Identity: Email ends with @yourcompany.com
+Require: 2FA authentication
+```
 
-1. Go to SSL/TLS → Overview
-2. Choose "Full (strict)" mode
-3. This provides end-to-end encryption:
-   - Browser ↔ Cloudflare: Encrypted
-   - Cloudflare ↔ Your Server: Encrypted
+### 3. Create Cloudflare Tunnel
 
-### 3. Edge Certificates
+#### Method 1: Using Cloudflare Dashboard (Recommended)
 
-Cloudflare automatically provides:
-- Universal SSL coverage
-- Wildcard certificates (*.yourdomain.com)
-- Automatic certificate renewal
-- HSTS preloading
+1. Go to Zero Trust → Networks → Tunnels
+2. Click "Create a tunnel"
+3. Choose **Cloudflared** connector
+4. Install cloudflared on your server:
+   ```bash
+   # Download cloudflared
+   wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+   sudo dpkg -i cloudflared-linux-amd64.deb
 
-## How It Works
+   # Authenticate
+   cloudflared tunnel login
 
-1. **Cloudflare Proxy**: Traffic goes through Cloudflare's network
-2. **SSL Termination**: Cloudflare handles SSL certificate management
-3. **Origin Connection**: Cloudflare connects to your server over HTTPS or HTTP
-4. **Performance**: Benefits from Cloudflare's CDN and caching
+   # Create tunnel
+   cloudflared tunnel create payroll-tunnel
+   ```
 
-## Port Configuration
+5. Configure tunnel route:
+   ```bash
+   cloudflared tunnel route dns payroll-tunnel payroll.farindra.com
+   ```
 
-Since Cloudflare handles the public-facing SSL, you only need:
+6. Create config file `/etc/cloudflared/config.yml`:
+   ```yaml
+   tunnel: payroll-tunnel
+   credentials-file: /etc/cloudflared/.cloudflared/tunnel-credentials.json
 
-- **External**: Port 80 and 443 (handled by Cloudflare)
-- **Internal**: Your server can run on any port (8282 in this case)
+   ingress:
+     - hostname: payroll.farindra.com
+       service: http://localhost:8282
+     - service: http_status:404
+   ```
+
+7. Start the tunnel:
+   ```bash
+   sudo cloudflared tunnel run payroll-tunnel
+   ```
+
+#### Method 2: Docker Method
+
+Create a `docker-compose.cloudflare.yml`:
+```yaml
+version: '3.8'
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=your_tunnel_token_here
+    command: tunnel run
+```
+
+### 4. Docker Integration
+
+Update your `docker-compose.yml` to ensure Zero Trust headers are passed:
+```yaml
+services:
+  app:
+    # ... existing config
+    environment:
+      - TRUSTED_PROxies=*
+      - CF_VISITOR=trust
+```
 
 ## Access Points
 
-After configuration:
-- **HTTPS**: https://payroll.farindra.com (via Cloudflare)
-- **HTTP**: http://payroll.farindra.com (redirects to HTTPS via Cloudflare)
-- **Local**: http://localhost:8282 (direct access)
+After Zero Trust configuration:
+- **Secure Access**: https://payroll.farindra.com (via Zero Trust)
+- **Local Development**: http://localhost:8282 (direct access)
+- **Cloudflare Dashboard**: https://one.dash.cloudflare.com
 
-## Caddy Configuration
+## Security Features
 
-The current Caddyfile is simplified:
-- No DNS challenge needed
-- No ACME configuration required
-- Cloudflare handles all SSL termination
+### Zero Trust Provides:
+✅ **Identity Verification**: Email, SSO, 2FA authentication
+✅ **Device Posture**: Check device health and compliance
+✅ **Location Based**: Restrict by country or IP
+✅ **Time-based Access**: Schedule access windows
+✅ **Audit Logging**: Complete access logs
+✅ **Session Control**: Manage session duration
 
-## Benefits
-
-✅ **No Certificate Management**: Cloudflare handles everything
-✅ **Better Performance**: CDN and caching benefits
-✅ **DDoS Protection**: Cloudflare's security features
-✅ **Automatic Renewal**: No expired certificates
-✅ **Wildcard Support**: Covers all subdomains
+### Application Security:
+✅ **No Public Exposure**: Application not directly accessible
+✅ **Encrypted Traffic**: End-to-end encryption
+✅ **Header Verification**: CF headers for additional security
+✅ **Rate Limiting**: Built-in DDoS protection
 
 ## Troubleshooting
 
-### Connection Issues
+### Tunnel Connection Issues
 ```bash
-# Check if your server is accessible
-curl http://localhost:8282
+# Check tunnel status
+cloudflared tunnel list
+cloudflared tunnel info payroll-tunnel
 
-# Check Cloudflare status
-curl -I https://payroll.farindra.com
+# Check tunnel logs
+sudo journalctl -u cloudflared -f
+
+# Test connection
+curl -H "Host: payroll.farindra.com" http://localhost:8282
 ```
 
-### SSL Issues in Cloudflare
-1. Check SSL/TLS mode is "Full (strict)"
-2. Verify origin certificate is valid
-3. Check mixed content issues
+### Zero Trust Access Issues
+1. Check Access policies in Zero Trust dashboard
+2. Verify user authentication status
+3. Check session duration settings
+4. Review audit logs for denied access
 
-### DNS Propagation
+### DNS Configuration
 ```bash
 # Check DNS resolution
 nslookup payroll.farindra.com
 
-# Check propagation status
+# Verify CNAME record points to tunnel
 dig payroll.farindra.com
 ```
 
-## Security Notes
+## Advanced Configuration
 
-- Cloudflare provides WAF protection
-- Always use "Full (strict)" SSL mode
-- Keep your server software updated
-- Use Cloudflare's firewall rules for additional security
+### Custom Application Settings
+In Zero Trust → Access → Applications → Your App:
+- **Custom Pages**: Brand login/error pages
+- **Session Settings**: Duration, timeout, concurrent sessions
+- **Device Requirements**: OS, browser versions, certificates
+- **Geofencing**: Allow/deny specific countries
 
-## Advanced Options
+### Additional Security Headers
+Add to Caddyfile:
+```caddyfile
+header {
+    # Cloudflare Zero Trust headers
+    CF-Connecting-IP {http.request.remote.host}
+    CF-Visitor {http.request.cf.visitor}
+    CF-Ray {http.request.cf-ray}
+    # Security headers
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'"
+}
+```
 
-### Custom Headers
-You can add additional security headers in Cloudflare:
-- Content Security Policy
-- X-Frame-Options
-- X-Content-Type-Options
+### Service Policies
+Create service-specific policies:
+- **API Access**: Different policies for API endpoints
+- **Admin Routes**: Additional authentication for admin areas
+- **Report Access**: Time-based access for report generation
 
-### Firewall Rules
-Set up firewall rules in Cloudflare:
-- Block suspicious traffic
-- Rate limiting
-- Country blocking
+## Monitoring and Logging
 
-### Caching
-Configure caching rules:
-- Static assets
-- API endpoints
-- Dynamic content
+### Zero Trust Dashboard
+- Access logs and audit trails
+- User activity monitoring
+- Security event alerts
+- Performance metrics
+
+### Application Logging
+```bash
+# View Caddy access logs
+docker-compose logs -f app
+
+# View tunnel logs
+docker-compose logs -f cloudflared
+```
+
+## Backup and Recovery
+
+### Tunnel Configuration
+- Export tunnel configuration regularly
+- Backup tunnel credentials file
+- Document access policies
+
+### Disaster Recovery
+- Secondary tunnel configuration
+- Backup DNS settings
+- Document restoration process
+
+This setup provides enterprise-grade security for your Filament Payroll application using Cloudflare Zero Trust.
