@@ -1,12 +1,8 @@
 {
 	admin :2019
-	email farindra.project@gmail.com
-	acme_dns cloudflare {
-		api_token yourtoken
-	}
 }
 
-# Handle the domain with automatic HTTPS
+# Handle the domain - Cloudflare will provide SSL
 payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
@@ -17,8 +13,10 @@ payroll.farindra.com {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		X-XSS-Protection "1; mode=block"
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	}
+
+	# Cloudflare already provides HSTS, so we don't need it here
+	# Cloudflare handles SSL termination
 
 	log {
 		output file /var/log/caddy/access.log
