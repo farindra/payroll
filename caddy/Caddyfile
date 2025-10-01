@@ -1,12 +1,8 @@
 {
 	admin :2019
-}
-
-# Configure DNS challenge for Cloudflare
-{
 	email farindra.project@gmail.com
 	acme_dns cloudflare {
-		api_token NNKEaL019eqy9Oc9hMCShNfcY4gjtmeN89M4tUR7
+		api_token yourtoken
 	}
 }
 
