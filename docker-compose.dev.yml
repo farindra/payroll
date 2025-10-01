@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: filament-payroll-app-dev
     ports:
-      - "8000:80"
+      - "8282:80"
       - "4430:443"
       - "2019:2019"  # Caddy admin API
     environment:
@@ -36,7 +36,7 @@ services:
     networks:
       - payroll-network-dev
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3

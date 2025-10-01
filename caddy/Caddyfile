@@ -2,23 +2,18 @@
 	admin :2019
 }
 
-# Handle all domains including localhost and custom domain
-*.localhost, payroll.farindra.com {
+# Simple localhost configuration to avoid DNS/TLS issues
+:80 {
 	root * /app/public
 	encode zstd gzip
 	file_server
 
 	header {
 		# Security headers
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		X-XSS-Protection "1; mode=block"
-		Referrer-Policy "strict-origin-when-cross-origin"
 	}
-
-	# Handle PHP files with FrankenPHP
-	# FrankenPHP automatically handles .php files
 
 	log {
 		output file /var/log/caddy/access.log
