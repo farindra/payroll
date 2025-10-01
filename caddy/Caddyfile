@@ -1,48 +1,29 @@
 {
-	# Admin API endpoint
 	admin :2019
 }
 
-# Handle all domains
 *.localhost {
-	# Enable FrankenPHP
-	frankenphp
-
-	# Root directory
 	root * /app/public
-
-	# PHP entrypoint
-	php_server {
-		resolve_root_symlink
-	}
-
-	# Handle static files with proper caching
+	encode zstd gzip
 	file_server
 
-	# Logging
+	header {
+		# Security headers
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Handle PHP files with FrankenPHP
+	# FrankenPHP automatically handles .php files
+
 	log {
 		output file /var/log/caddy/access.log
 		format json
 	}
 
-	# Security headers
-	header {
-		# HSTS
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		# Content Security Policy
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'"
-		# Other security headers
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		X-XSS-Protection "1; mode=block"
-		Referrer-Policy "strict-origin-when-cross-origin"
-		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-	}
-
-	# Gzip compression
-	encode zstd gzip
-
-	# Handle common errors
 	handle_errors {
 		respond "{http.error.status_code} {http.error.status_text}"
 	}
