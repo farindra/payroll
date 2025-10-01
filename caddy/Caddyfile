@@ -1,28 +1,10 @@
 {
 	admin :2019
-	# Disable automatic HTTPS and redirects
-	auto_https off
 }
 
-# HTTP configuration
 :80 {
 	root * /app/public
 	encode zstd gzip
 	file_server
-
-	header {
-		# Security headers
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		X-XSS-Protection "1; mode=block"
-	}
-
-	log {
-		output file /var/log/caddy/access.log
-		format json
-	}
-
-	handle_errors {
-		respond "{http.error.status_code} {http.error.status_text}"
-	}
+	handle_errors
 }
