@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libpng-dev \
     libwebp-dev \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
@@ -58,6 +60,10 @@ RUN if [ ! -f .env ]; then cp .env.example .env; fi \
 
 # Generate application key only if .env exists
 RUN if [ -f .env ]; then php artisan key:generate; fi
+
+# Build frontend assets
+RUN npm install
+RUN npm run build
 
 # Optimize Laravel for production (only if .env exists and is not example)
 RUN if [ -f .env ] && [ ! .env -ef .env.example ]; then \

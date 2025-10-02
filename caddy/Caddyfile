@@ -7,7 +7,7 @@ https://payroll.farindra.com, http://payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
 	file_server
-
+    php_server
 	# Security headers for Zero Trust
 	header {
 		X-Content-Type-Options "nosniff"
