@@ -3,7 +3,7 @@
 }
 
 # Handle Zero Trust tunnel traffic
-payroll.farindra.com {
+https://payroll.farindra.com, http://payroll.farindra.com {
 	root * /app/public
 	encode zstd gzip
 	file_server
@@ -29,10 +29,3 @@ payroll.farindra.com {
 	}
 }
 
-# Handle localhost without HTTPS
-:80 {
-	root * /app/public
-	encode zstd gzip
-	file_server
-	handle_errors
-}
