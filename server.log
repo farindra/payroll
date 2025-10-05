@@ -1,0 +1,24 @@
+
+   INFO  Server running on [http://0.0.0.0:8000].  
+
+  Press Ctrl+C to stop the server
+
+   WARN  PHP Deprecated: Laravel\Sanctum\HasApiTokens::createToken(): Implicitly marking parameter $expiresAt as nullable is deprecated, the explicit nullable type must be used instead in vendor/laravel/sanctum/src/HasApiTokens.php on line 46.  
+
+  2025-10-05 12:35:16 ................................................... ~ 4s
+  2025-10-05 12:35:16 ................................................... ~ 5s
+  2025-10-05 12:35:22 ................................................... ~ 1s
+  2025-10-05 12:35:23 /css/filament/forms/forms.css?v=3.3.41.0 .......... ~ 0s
+  2025-10-05 12:35:23 /css/filament/support/support.css?v=3.3.41.0 ...... ~ 0s
+  2025-10-05 12:35:23 /css/filament/filament/app.css?v=3.3.41.0 ......... ~ 0s
+  2025-10-05 12:35:23 /images/logo.svg .................................. ~ 0s
+  2025-10-05 12:35:23 /js/filament/notifications/notifications.js?v=3.3.41.0  ~ 0s
+  2025-10-05 12:35:23 ................................................... ~ 1s
+  2025-10-05 12:35:23 /js/filament/support/support.js?v=3.3.41.0 ........ ~ 1s
+  2025-10-05 12:35:23 /js/filament/filament/echo.js?v=3.3.41.0 .......... ~ 1s
+  2025-10-05 12:35:23 /js/filament/filament/app.js?v=3.3.41.0 ........... ~ 1s
+  2025-10-05 12:35:25 /images/favicon.svg ............................... ~ 0s
+  2025-10-05 12:41:06 ................................................... ~ 1s
+  2025-10-05 13:02:34 ................................................... ~ 0s
+  2025-10-05 13:04:33 ................................................... ~ 1s
+  2025-10-05 13:14:33 ................................................... ~ 0s

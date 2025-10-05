@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
             ComprehensivePayrollSeeder::class,
             ShieldSeeder::class,  // This will create all Filament Shield permissions and roles
             PermissionSeeder::class,  // Custom permissions for payroll reports
-            RoleSeeder::class,  // Custom role assignments (may be redundant now)
             UserSeeder::class,
         ]);
     }

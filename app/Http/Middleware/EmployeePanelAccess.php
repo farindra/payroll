@@ -37,7 +37,7 @@ class EmployeePanelAccess
             $currentPath = $request->path();
             $allowedPaths = [
                 'employee',
-                'employee/dashboard',
+                'employee/employee-dashboard',
                 'employee/employee-payroll-reports',
                 'employee/profile',
                 'employee/logout',

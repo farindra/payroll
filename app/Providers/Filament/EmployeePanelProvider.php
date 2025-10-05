@@ -35,7 +35,7 @@ class EmployeePanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Green,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            // Employee panel doesn't discover admin resources - prevents 403 errors
             // ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')-
             ->pages([
                 EmployeeDashboard::class,
