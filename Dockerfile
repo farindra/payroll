@@ -25,16 +25,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
-        bcmath \
-        bz2 \
-        gd \
-        intl \
-        mbstring \
-        pdo \
-        pdo_pgsql \
-        pgsql \
-        zip \
-        soap \
+    bcmath \
+    bz2 \
+    gd \
+    intl \
+    mbstring \
+    pdo \
+    pdo_pgsql \
+    pgsql \
+    zip \
+    soap \
     && docker-php-ext-enable opcache
 
 # Install Composer
@@ -71,6 +71,8 @@ RUN if [ -f .env ] && [ ! .env -ef .env.example ]; then \
     && php artisan route:cache \
     && php artisan view:cache; \
     fi
+
+RUN apt-get install -y nano
 
 # Expose port
 EXPOSE 80
